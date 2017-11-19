@@ -21,7 +21,7 @@ defmodule EmqThrottlePlugin.Mixfile do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: [:logger],
+      extra_applications: [:logger, :redix],
       mod: {EmqThrottlePlugin, []}
     ]
   end
@@ -29,7 +29,7 @@ defmodule EmqThrottlePlugin.Mixfile do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:throttle, git: "https://github.com/topfreegames/throttle.git"},
+      {:redix, ">= 0.0.0"},
       {:emqttd,
        github: "emqtt/emqttd",
        only: [:test],

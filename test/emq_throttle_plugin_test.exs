@@ -15,6 +15,6 @@ defmodule EmqThrottlePluginTest do
 
   test "sending one message" do
     mqtt_client = EmqThrottlePlugin.Shared.mqtt_client(username: "not_user")
-    assert EmqThrottlePlugin.AclBody.check_acl({mqtt_client, nil, @topic}, []) == :allow
+    assert EmqThrottlePlugin.Throttle.check_acl({mqtt_client, nil, @topic}, []) == :allow
   end
 end

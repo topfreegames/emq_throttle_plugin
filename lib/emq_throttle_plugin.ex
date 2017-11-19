@@ -3,7 +3,7 @@ defmodule EmqThrottlePlugin do
 
   def start(_type, _args) do
     {:ok, supervisor} = EmqThrottlePlugin.Supervisor.start_link()
-    :emqttd_access_control.register_mod(:acl, EmqThrottlePlugin.AclBody, [])
+    :emqttd_access_control.register_mod(:acl, EmqThrottlePlugin.Throttle, [])
     {:ok, supervisor}
   end
 

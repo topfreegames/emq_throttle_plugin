@@ -1,5 +1,4 @@
-defmodule EmqThrottlePlugin.AclBody do
-  require Throttle
+defmodule EmqThrottlePlugin.Throttle do
   require EmqThrottlePlugin.Shared
 
   @behaviour :emqttd_acl_mod
@@ -19,12 +18,7 @@ defmodule EmqThrottlePlugin.AclBody do
   end
 
   defp throttle({client, topic}) do
-    username = EmqThrottlePlugin.Shared.mqtt_client(client, :username)
-    key = build_key(username, topic)
-    case Throttle.allow?({key, :rpm, 1}) do
-      {:ok, _result} -> :allow
-      {:error, _result} -> :deny
-    end
+    :allow
   end
 
   defp build_key(username, topic) do 
