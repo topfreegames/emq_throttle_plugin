@@ -15,6 +15,7 @@ defmodule EmqThrottlePlugin.Throttle do
       :publish -> throttle({client, topic})
       :subscribe -> :allow
       _ -> :allow
+    end
   end
 
   def reload_acl(_state), do: :ok
