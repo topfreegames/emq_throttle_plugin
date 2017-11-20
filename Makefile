@@ -14,3 +14,6 @@ elixir/lib/elixir/ebin/elixir.app:
 	git clone https://github.com/elixir-lang/elixir.git
 	echo "start to build elixir ..."
 	make -C elixir -f Makefile
+
+clean:
+	rm -rf _build deps
