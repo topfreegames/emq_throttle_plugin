@@ -10,8 +10,11 @@ defmodule EmqThrottlePlugin.Throttle do
     {:ok, params}
   end
 
-  def check_acl({client, _pubsub, topic} = _args, _state) do
-    throttle({client, topic})
+  def check_acl({client, pubsub, topic} = _args, _state) do
+    case pubsub do
+      :publish -> throttle({client, topic})
+      :subscribe -> :allow
+      _ -> :allow
   end
 
   def reload_acl(_state), do: :ok
@@ -24,19 +27,19 @@ defmodule EmqThrottlePlugin.Throttle do
     username = EmqThrottlePlugin.Shared.mqtt_client(client, :username)
     key = build_key(username, topic)
     case Redis.command(["incr", key]) do
-      {:error, message} -> {:error, message}
-
       {:ok, count} ->
         if count == 1 do
           expire(key)
         end
         if count < @redis_count_limit do
-          {:ok, :allow}
+          :allow
         else
-          {:ok, :deny}
+          :deny
         end
 
-      {_, result} -> IO.puts result
+      {_, result} -> 
+        IO.puts result
+        :allow
     end
   end
 
