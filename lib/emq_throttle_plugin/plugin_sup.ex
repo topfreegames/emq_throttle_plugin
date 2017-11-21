@@ -7,7 +7,7 @@ defmodule EmqThrottlePlugin.Supervisor do
   end
 
   def init(children) do
-    if not Redix.check do
+    if Process.whereis(Redix) == nil do
       host = System.get_env("REDIS_AUTH_REDIS_HOST") || "localhost"
       port = String.to_integer(System.get_env("REDIS_AUTH_REDIS_PORT") || "6379")
       password = System.get_env("REDIS_AUTH_REDIS_PASSWORD") || nil
