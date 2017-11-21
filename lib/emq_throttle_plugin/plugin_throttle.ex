@@ -3,9 +3,6 @@ defmodule EmqThrottlePlugin.Throttle do
   alias EmqThrottlePlugin.{Redis, Utils}
 
   @behaviour :emqttd_acl_mod
-  @redis_expire_time String.to_integer(System.get_env("REDIS_EXPIRE_TIME") || "60")
-  @redis_count_limit String.to_integer(System.get_env("REDIS_COUNT_LIMIT") || "10")
-  @admin_username System.get_env("MQTT_ADMIN_USER_SUBSTRING") || "admin"
 
   def init(params) do
     {:ok, params}
@@ -29,12 +26,12 @@ defmodule EmqThrottlePlugin.Throttle do
     topic <> "-" <> username
   end
 
-  def throttle({client, topic}, window \\ @redis_expire_time) do
+  def throttle({client, topic}, window \\ Utils.expire_time()) do
     username = EmqThrottlePlugin.Shared.mqtt_client(client, :username)
     key = build_key(username, topic)
 
     cond do
-      String.contains?(username, @admin_username) -> :allow
+      Utils.is_superuser?(username) -> :allow
       incr(key, window) -> check_throttle(key, window)
       true -> :allow
     end
@@ -52,7 +49,7 @@ defmodule EmqThrottlePlugin.Throttle do
           :allow
         end
       else
-        if count <= @redis_count_limit do 
+        if count <= Utils.count_limit() do 
           :allow
         else 
           expire_time = if backoff == 0, do: 2*window, else: 2*backoff+window
@@ -89,7 +86,7 @@ defmodule EmqThrottlePlugin.Throttle do
     end
   end
 
-  defp set_backoff(key, backoff, window \\ @redis_expire_time) do
+  defp set_backoff(key, backoff, window \\ Utils.expire_time()) do
     backoff = if backoff > 0, do: 2*backoff, else: window
     now = :os.system_time(:seconds)
     Redis.command([
