@@ -4,6 +4,7 @@ defmodule EmqThrottlePluginTest do
   require EmqThrottlePlugin.Shared
   alias EmqThrottlePlugin.{Redis, Throttle}
 
+  @testtopic "test"
   @topic "chat/name/example"
   @user "such_user"
   @admin "admin_user"
@@ -32,6 +33,11 @@ defmodule EmqThrottlePluginTest do
   test "sending one message" do
     mqtt_client = EmqThrottlePlugin.Shared.mqtt_client(username: @user)
     assert EmqThrottlePlugin.Throttle.check_acl({mqtt_client, :publish, @topic}, []) == :allow
+  end
+
+  test "sending one message in test topic" do
+    mqtt_client = EmqThrottlePlugin.Shared.mqtt_client(username: @user)
+    assert EmqThrottlePlugin.Throttle.check_acl({mqtt_client, :publish, @testtopic}, []) == :allow
   end
 
   test "sending 11th message in less then 60s" do

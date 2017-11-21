@@ -16,7 +16,8 @@ defmodule EmqThrottlePlugin.Utils do
   end
 
   def name_from_topic(topic) do
-    topic |> String.split("/") |> Enum.at(1) 
+    blocks = topic |> String.split("/") 
+    Enum.at(blocks, 1) || Enum.at(blocks, 0)
   end
 
   def is_superuser?(username) do
