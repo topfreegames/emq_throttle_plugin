@@ -10,13 +10,13 @@ defmodule EmqThrottlePlugin.Utils do
   end
 
   def count_limit(topic) do
-    name = name_from_topic(topic)
+    name = name_from_topic(topic) |> String.upcase
     envvar = "REDIS_" <> name <> "_COUNT_LIMIT"
     String.to_integer(System.get_env(envvar) || "10")
   end
 
   def name_from_topic(topic) do
-    topic |> String.split("/") |> Enum.at(1) |> String.upcase
+    topic |> String.split("/") |> Enum.at(1) 
   end
 
   def is_superuser?(username) do
