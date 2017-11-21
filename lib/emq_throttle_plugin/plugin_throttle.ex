@@ -54,7 +54,7 @@ defmodule EmqThrottlePlugin.Throttle do
         if count <= @redis_count_limit do 
           :allow
         else 
-          expire_time = if backoff == 0, do: 2*window, else: backoff+window
+          expire_time = if backoff == 0, do: 2*window, else: 2*backoff+window
           set_backoff(key, backoff, window)
           expire(key, expire_time)
           :deny
