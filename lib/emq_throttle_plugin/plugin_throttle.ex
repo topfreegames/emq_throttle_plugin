@@ -5,6 +5,7 @@ defmodule EmqThrottlePlugin.Throttle do
   @behaviour :emqttd_acl_mod
   @redis_expire_time String.to_integer(System.get_env("REDIS_EXPIRE_TIME") || "60")
   @redis_count_limit String.to_integer(System.get_env("REDIS_COUNT_LIMIT") || "10")
+  @admin_username System.get_env("MQTT_ADMIN_USER_SUBSTRING") || "admin"
 
   def init(params) do
     {:ok, params}
@@ -32,10 +33,10 @@ defmodule EmqThrottlePlugin.Throttle do
     username = EmqThrottlePlugin.Shared.mqtt_client(client, :username)
     key = build_key(username, topic)
 
-    if incr(key, window) do
-      check_throttle(key, window)
-    else
-      :allow
+    cond do
+      String.contains?(username, @admin_username) -> :allow
+      incr(key, window) -> check_throttle(key, window)
+      true -> :allow
     end
   end
 

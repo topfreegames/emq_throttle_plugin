@@ -6,6 +6,7 @@ defmodule EmqThrottlePluginTest do
 
   @topic "such/example/chat"
   @user "such_user"
+  @admin "admin_user"
 
   setup_all do
     System.put_env("REDIS_EXPIRE_TIME", "3")
@@ -75,5 +76,12 @@ defmodule EmqThrottlePluginTest do
 
     # allow again after 2s
     assert EmqThrottlePlugin.Throttle.throttle({mqtt_client, @topic}, window) == :allow
+  end
+
+  test "when admin is sending many messages" do
+    mqtt_client = EmqThrottlePlugin.Shared.mqtt_client(username: @admin)
+
+    assert Enum.map(1..20, fn _ -> EmqThrottlePlugin.Throttle.check_acl({mqtt_client, :publish, @topic}, []) end)
+    |> Enum.all?(&(&1 == :allow))
   end
 end
