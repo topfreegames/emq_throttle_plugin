@@ -9,8 +9,14 @@ defmodule EmqThrottlePlugin.Utils do
     String.to_integer(System.get_env("REDIS_EXPIRE_TIME") || "60")
   end
 
-  def count_limit() do
-    String.to_integer(System.get_env("REDIS_COUNT_LIMIT") || "10")
+  def count_limit(topic) do
+    name = name_from_topic(topic)
+    envvar = "REDIS_" <> name <> "_COUNT_LIMIT"
+    String.to_integer(System.get_env(envvar) || "10")
+  end
+
+  def name_from_topic(topic) do
+    topic |> String.split("/") |> Enum.at(1) |> String.upcase
   end
 
   def is_superuser?(username) do

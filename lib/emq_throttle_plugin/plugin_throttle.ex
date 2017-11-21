@@ -23,7 +23,7 @@ defmodule EmqThrottlePlugin.Throttle do
   end
 
   def build_key(username, topic) do 
-    topic <> "-" <> username
+    "throttle:" <> Utils.name_from_topic(topic) <> ":" <> topic <> "-" <> username
   end
 
   def throttle({client, topic}, window \\ Utils.expire_time()) do
@@ -32,12 +32,12 @@ defmodule EmqThrottlePlugin.Throttle do
 
     cond do
       Utils.is_superuser?(username) -> :allow
-      incr(key, window) -> check_throttle(key, window)
+      incr(key, window) -> check_throttle(key, topic, window)
       true -> :allow
     end
   end
 
-  defp check_throttle(key, window) do
+  defp check_throttle(key, topic, window) do
     result = values(key)
     if result do
       {count, in_backoff, backoff, time} = result
@@ -49,7 +49,7 @@ defmodule EmqThrottlePlugin.Throttle do
           :allow
         end
       else
-        if count <= Utils.count_limit() do 
+        if count <= Utils.count_limit(topic) do 
           :allow
         else 
           expire_time = if backoff == 0, do: 2*window, else: 2*backoff+window

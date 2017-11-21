@@ -4,7 +4,7 @@ defmodule EmqThrottlePluginTest do
   require EmqThrottlePlugin.Shared
   alias EmqThrottlePlugin.{Redis, Throttle}
 
-  @topic "such/example/chat"
+  @topic "chat/name/example"
   @user "such_user"
   @admin "admin_user"
 
