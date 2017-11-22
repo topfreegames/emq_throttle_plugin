@@ -7,11 +7,12 @@ defmodule EmqThrottlePluginTest do
   @testtopic "test"
   @topic "chat/name/example"
   @user "such_user"
-  @admin "admin_user"
+  @admin "root_user"
 
   setup_all do
     System.put_env("REDIS_EXPIRE_TIME", "3")
     System.put_env("MQTT_THROTTLE_NAME_ENABLED", "true")
+    System.put_env("MQTT_ADMIN_USER_SUBSTRING", "admin,root")
 
     :emqttd_access_control.start_link()
     {:ok, _emttd_throttle} = EmqThrottlePlugin.start(nil, nil)

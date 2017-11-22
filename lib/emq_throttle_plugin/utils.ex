@@ -22,7 +22,11 @@ defmodule EmqThrottlePlugin.Utils do
 
   def is_superuser?(username) do
     su = System.get_env("MQTT_ADMIN_USER_SUBSTRING") || "admin"
-    String.contains?(username, su)
+    superusers = String.split(su, ",")
+    Enum.any?(
+      superusers,
+      &(String.contains?(username, &1))
+    )
   end
 
   def is_enabled?(topic) do
