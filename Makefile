@@ -18,3 +18,6 @@ elixir/lib/elixir/ebin/elixir.app:
 
 clean:
 	rm -rf _build deps
+
+test:
+	mix test --cover
