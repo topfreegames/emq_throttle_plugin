@@ -32,18 +32,18 @@ defmodule EmqThrottlePlugin.Throttle do
 
     cond do
       Utils.is_superuser?(username) -> :allow
-      incr(key, window) -> check_throttle(key, topic, window)
+      incr(key, window) -> check_throttle(key, client, topic, window)
       true -> :allow
     end
   end
 
-  defp check_throttle(key, topic, window) do
+  defp check_throttle(key, client, topic, window) do
     result = values(key)
     if result do
       {count, in_backoff, backoff, time} = result
       if in_backoff do
         if is_in_backoff?(backoff, time) do
-          :deny
+          deny(client)
         else
           end_backoff(key)
           :allow
@@ -55,7 +55,7 @@ defmodule EmqThrottlePlugin.Throttle do
           expire_time = if backoff == 0, do: 2*window, else: 2*backoff+window
           set_backoff(key, backoff, window)
           expire(key, expire_time)
-          :deny
+          deny(client)
         end
       end
     else
@@ -108,5 +108,10 @@ defmodule EmqThrottlePlugin.Throttle do
       "in_backoff", false, 
       "count", 1,
     ])
+  end
+
+  defp deny(client) do
+    _ = EmqThrottlePlugin.Shared.mqtt_session(client, :clean_sess)
+    :deny
   end
 end
