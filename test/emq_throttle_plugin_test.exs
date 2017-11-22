@@ -6,6 +6,7 @@ defmodule EmqThrottlePluginTest do
 
   @testtopic "test"
   @topic "chat/name/example"
+  @disabled_topic "chat/anothername/example"
   @user "such_user"
   @admin "root_user"
 
@@ -38,6 +39,11 @@ defmodule EmqThrottlePluginTest do
   end
 
   test "sending one message in test topic" do
+    mqtt_client = EmqThrottlePlugin.Shared.mqtt_client(username: @user)
+    assert EmqThrottlePlugin.Throttle.check_acl({mqtt_client, :publish, @testtopic}, []) == :allow
+  end
+
+  test "sending 20 messages on disabled topic" do
     mqtt_client = EmqThrottlePlugin.Shared.mqtt_client(username: @user)
     assert EmqThrottlePlugin.Throttle.check_acl({mqtt_client, :publish, @testtopic}, []) == :allow
   end
@@ -90,6 +96,13 @@ defmodule EmqThrottlePluginTest do
     mqtt_client = EmqThrottlePlugin.Shared.mqtt_client(username: @admin)
 
     assert Enum.map(1..20, fn _ -> EmqThrottlePlugin.Throttle.check_acl({mqtt_client, :publish, @topic}, []) end)
+    |> Enum.all?(&(&1 == :allow))
+  end
+
+  test "when sending many messages to disabled topic" do
+    mqtt_client = EmqThrottlePlugin.Shared.mqtt_client(username: @user)
+
+    assert Enum.map(1..20, fn _ -> EmqThrottlePlugin.Throttle.check_acl({mqtt_client, :publish, @disabled_topic}, []) end)
     |> Enum.all?(&(&1 == :allow))
   end
 end

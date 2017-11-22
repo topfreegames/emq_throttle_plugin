@@ -1,14 +1,33 @@
 defmodule EmqThrottlePlugin.Throttle do
+  @moduledoc """
+  Throttle access redis to control how many messages
+  was sent by user. If it exceeds, a backoff time is set
+  and the user receives ACL deny during this period.
+  When this period ends, the user can send messages again.
+  If he/she doesn't blow throttle again, the key is removed
+  from redis and the backoff time reseted.
+  If he/she blows the throttle again, the backoff time 
+  is set to 2 times the previous one.
+  """
+
   require EmqThrottlePlugin.Shared
   require Logger
   alias EmqThrottlePlugin.{Redis, Utils}
 
   @behaviour :emqttd_acl_mod
 
+  @doc """
+  The implementation of init function from emqttd_acl_mod.
+  """
   def init(params) do
     {:ok, params}
   end
 
+  @doc """
+  The implementation of check_acl function from emqttd_acl_mod.
+  On subscribe, returns allow or ignore.
+  On publish, checks if user exceeded throttle.
+  """
   def check_acl({client, pubsub, topic} = _args, _state) do
     case pubsub do
       :publish -> throttle({client, topic})
@@ -17,16 +36,31 @@ defmodule EmqThrottlePlugin.Throttle do
     end
   end
 
+  @doc """
+  The implementation of reload_acl function from emqttd_acl_mod.
+  """
   def reload_acl(_state), do: :ok
 
+  @doc """
+  The implementation of description function from emqttd_acl_mod.
+  """
   def description do
     "Throttling messages using redis as backend"
   end
 
+  @doc """
+  Returns the redis key using topic and username. Name is, by conventions,
+  the second part of the topic which is separated by forward slash.
+  """
   def build_key(username, topic) do 
     "throttle:" <> Utils.name_from_topic(topic) <> ":" <> topic <> "-" <> username
   end
 
+  @doc """
+  Returnst :allow if user is superuser or if this name, extracted from topic, is 
+  disabled (which is the default).
+  Otherwise, increments user number of messages and checks if he/she exceeded throttle.
+  """
   def throttle({client, topic}, window \\ Utils.expire_time()) do
     username = EmqThrottlePlugin.Shared.mqtt_client(client, :username)
     key = build_key(username, topic)
