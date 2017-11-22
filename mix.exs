@@ -9,6 +9,7 @@ defmodule EmqThrottlePlugin.Mixfile do
       start_permanent: Mix.env == :prod,
       deps: deps(),
       aliases: aliases(),
+      test_coverage: [tool: Coverex.Task],
     ]
   end
 
@@ -30,6 +31,7 @@ defmodule EmqThrottlePlugin.Mixfile do
   defp deps do
     [
       {:redix, ">= 0.0.0"},
+      {:coverex, "~> 1.4.10", only: :test},
       {:emqttd,
        github: "emqtt/emqttd",
        only: [:test],

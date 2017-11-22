@@ -11,6 +11,7 @@ defmodule EmqThrottlePluginTest do
 
   setup_all do
     System.put_env("REDIS_EXPIRE_TIME", "3")
+    System.put_env("MQTT_THROTTLE_NAME_ENABLED", "true")
 
     :emqttd_access_control.start_link()
     {:ok, _emttd_throttle} = EmqThrottlePlugin.start(nil, nil)

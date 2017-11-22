@@ -1,5 +1,6 @@
 defmodule EmqThrottlePlugin.Throttle do
   require EmqThrottlePlugin.Shared
+  require Logger
   alias EmqThrottlePlugin.{Redis, Utils}
 
   @behaviour :emqttd_acl_mod
@@ -30,70 +31,64 @@ defmodule EmqThrottlePlugin.Throttle do
     username = EmqThrottlePlugin.Shared.mqtt_client(client, :username)
     key = build_key(username, topic)
 
-    cond do
-      Utils.is_superuser?(username) -> :allow
-      incr(key, window) -> check_throttle(key, client, topic, window)
-      true -> :allow
+    if Utils.is_superuser?(username) or not Utils.is_enabled?(topic) do
+      :allow
+    else
+      result = incr_and_get(key)
+      if result do
+        check_throttle(result, key, username, topic, window)
+      else
+        :allow
+      end
     end
   end
 
-  defp check_throttle(key, client, topic, window) do
-    result = values(key)
-    if result do
-      {count, in_backoff, backoff, time} = result
-      if in_backoff do
-        if is_in_backoff?(backoff, time) do
-          deny(client)
-        else
-          end_backoff(key)
-          :allow
-        end
+  defp check_throttle(result, key, username, topic, window) do
+    values = extract(result)
+    {count, in_backoff, backoff, time} = values
+    if in_backoff do
+      if is_in_backoff?(backoff, time) do
+        deny(username, topic)
       else
-        if count <= Utils.count_limit(topic) do 
-          :allow
-        else 
-          expire_time = if backoff == 0, do: 2*window, else: 2*backoff+window
-          set_backoff(key, backoff, window)
-          expire(key, expire_time)
-          deny(client)
-        end
+        end_backoff(key)
+        :allow
       end
     else
-      :allow
+      if count <= Utils.count_limit(topic) do 
+        :allow
+      else 
+        expire_time = if backoff == 0, do: 2*window, else: 2*backoff+window
+        set_backoff(key, backoff, expire_time, window)
+        deny(username, topic)
+      end
     end
   end
 
-  defp expire(key, window) do
-    Redis.command(["EXPIRE", key, window])
+  defp incr_and_get(key) do
+    result = Redis.pipeline([
+      ["HINCRBY", key, "count", 1],
+      ["HMGET", key, "count", "in_backoff", "backoff", "time"],
+    ])
+    if result, do: Enum.at(result, 1), else: nil
   end
 
-  defp incr(key, window) do
-    count = Redis.command(["HINCRBY", key, "count", 1])
-    if count && count == 1, do: expire(key, window)
-    count
+  defp extract(result) do
+    [count, in_backoff, backoff, time] = result
+    {Utils.to_int(count), 
+      Utils.to_bool(in_backoff),
+      Utils.to_int(backoff),
+      Utils.to_int(time)}
   end
 
-  defp values(key) do
-    result = Redis.command(["HMGET", key, "count", "in_backoff", "backoff", "time"])
-    if result != nil do
-      [count, in_backoff, backoff, time] = result
-      {Utils.to_int(count), 
-        Utils.to_bool(in_backoff),
-        Utils.to_int(backoff),
-        Utils.to_int(time)}
-    else
-      nil
-    end
-  end
-
-  defp set_backoff(key, backoff, window \\ Utils.expire_time()) do
+  defp set_backoff(key, backoff, expire_time, window) do
     backoff = if backoff > 0, do: 2*backoff, else: window
     now = :os.system_time(:seconds)
-    Redis.command([
-      "HMSET", key, 
+    Redis.pipeline([
+      ["HMSET", key, 
       "in_backoff", true, 
       "backoff", backoff,
-      "time", now,
+       "time", now], 
+      ["EXPIRE", key, expire_time],
     ])
   end
 
@@ -110,8 +105,8 @@ defmodule EmqThrottlePlugin.Throttle do
     ])
   end
 
-  defp deny(client) do
-    _ = EmqThrottlePlugin.Shared.mqtt_session(client, :clean_sess)
+  defp deny(username, topic) do
+    Logger.info fn -> "user #{username} on topic #{topic} exceeded throttle limit" end
     :deny
   end
 end

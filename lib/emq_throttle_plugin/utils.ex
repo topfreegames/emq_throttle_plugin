@@ -24,4 +24,11 @@ defmodule EmqThrottlePlugin.Utils do
     su = System.get_env("MQTT_ADMIN_USER_SUBSTRING") || "admin"
     String.contains?(username, su)
   end
+
+  def is_enabled?(topic) do
+    name = name_from_topic(topic) |> String.upcase
+    envvar = "MQTT_THROTTLE_" <> name <> "_ENABLED"
+    is_enabled = System.get_env(envvar) || "false"
+    String.to_existing_atom(is_enabled)
+  end
 end
