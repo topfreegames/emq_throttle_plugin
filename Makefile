@@ -6,8 +6,7 @@ PATH := $(CURDIR)/elixir/bin:$(PATH)
 all: elixir/lib/elixir/ebin/elixir.app
 	mix local.hex --force
 	mix deps.get
-	make -C deps/emqttd
-	ERL_LIBS=deps mix compile
+	mix compile
 	-rm -rf $(CURDIR)/elixir/lib/mix/test
 
 
