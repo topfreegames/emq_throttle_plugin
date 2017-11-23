@@ -5,8 +5,9 @@ defmodule EmqThrottlePlugin.Utils do
   def to_int(nil), do: 0
   def to_int(v), do: String.to_integer(v)
 
-  def expire_time() do
-    String.to_integer(System.get_env("REDIS_EXPIRE_TIME") || "60")
+  def expire_time(topic) do
+    name = name_from_topic(topic) |> String.upcase
+    String.to_integer(System.get_env("REDIS_" <> name <> "_EXPIRE_TIME") || "60")
   end
 
   def count_limit(topic) do

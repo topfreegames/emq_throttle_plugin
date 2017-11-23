@@ -30,7 +30,7 @@ defmodule EmqThrottlePlugin.Throttle do
   """
   def check_acl({client, pubsub, topic} = _args, _state) do
     case pubsub do
-      :publish -> throttle({client, topic})
+      :publish -> throttle({client, topic}, Utils.expire_time(topic))
       :subscribe -> :allow
       _ -> :allow
     end
@@ -61,7 +61,7 @@ defmodule EmqThrottlePlugin.Throttle do
   disabled (which is the default).
   Otherwise, increments user number of messages and checks if he/she exceeded throttle.
   """
-  def throttle({client, topic}, window \\ Utils.expire_time()) do
+  def throttle({client, topic}, window) do
     username = EmqThrottlePlugin.Shared.mqtt_client(client, :username)
     key = build_key(username, topic)
 
