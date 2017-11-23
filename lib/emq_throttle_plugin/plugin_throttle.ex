@@ -68,7 +68,7 @@ defmodule EmqThrottlePlugin.Throttle do
     if Utils.is_superuser?(username) or not Utils.is_enabled?(topic) do
       :allow
     else
-      result = incr_and_get(key)
+      result = incr_and_get(key, window)
       if result do
         check_throttle(result, key, username, topic, window)
       else
@@ -80,6 +80,11 @@ defmodule EmqThrottlePlugin.Throttle do
   defp check_throttle(result, key, username, topic, window) do
     values = extract(result)
     {count, in_backoff, backoff, time} = values
+
+    if count == 1 do
+      expire(key, window)
+    end
+
     if in_backoff do
       if is_in_backoff?(backoff, time) do
         deny(username, topic)
@@ -98,7 +103,7 @@ defmodule EmqThrottlePlugin.Throttle do
     end
   end
 
-  defp incr_and_get(key) do
+  defp incr_and_get(key, window) do
     result = Redis.pipeline([
       ["HINCRBY", key, "count", 1],
       ["HMGET", key, "count", "in_backoff", "backoff", "time"],
@@ -142,5 +147,9 @@ defmodule EmqThrottlePlugin.Throttle do
   defp deny(username, topic) do
     Logger.info fn -> "user #{username} on topic #{topic} exceeded throttle limit" end
     :deny
+  end
+
+  defp expire(key, window) do
+    Redis.command(["EXPIRE", key, window])
   end
 end
