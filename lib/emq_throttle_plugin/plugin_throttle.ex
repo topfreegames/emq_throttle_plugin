@@ -31,8 +31,8 @@ defmodule EmqThrottlePlugin.Throttle do
   def check_acl({client, pubsub, topic} = _args, _state) do
     case pubsub do
       :publish -> throttle({client, topic}, Utils.expire_time(topic))
-      :subscribe -> :allow
-      _ -> :allow
+      :subscribe -> :ignore
+      _ -> :ignore
     end
   end
 
@@ -72,7 +72,7 @@ defmodule EmqThrottlePlugin.Throttle do
       if result do
         check_throttle(result, key, username, topic, window)
       else
-        :allow
+        :ignore
       end
     end
   end
@@ -90,11 +90,11 @@ defmodule EmqThrottlePlugin.Throttle do
         deny(username, topic)
       else
         end_backoff(key)
-        :allow
+        :ignore
       end
     else
       if count <= Utils.count_limit(topic) do 
-        :allow
+        :ignore
       else 
         expire_time = if backoff == 0, do: 2*window, else: 2*backoff+window
         set_backoff(key, backoff, expire_time, window)
