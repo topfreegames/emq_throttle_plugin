@@ -2,6 +2,7 @@
 
 PATH := $(CURDIR)/elixir/bin:$(PATH)
 
+.PHONY: test
 
 all: elixir/lib/elixir/ebin/elixir.app
 	mix local.hex --force
