@@ -30,29 +30,29 @@ defmodule EmqThrottlePluginTest do
     mqtt_client = EmqThrottlePlugin.Shared.mqtt_client(username: @user)
 
     assert Enum.map(1..20, fn _ -> EmqThrottlePlugin.Throttle.check_acl({mqtt_client, :subscribe, @topic}, []) end)
-    |> Enum.all?(&(&1 == :allow))
+    |> Enum.all?(&(&1 == :ignore))
   end
 
   test "sending one message" do
     mqtt_client = EmqThrottlePlugin.Shared.mqtt_client(username: @user)
-    assert EmqThrottlePlugin.Throttle.check_acl({mqtt_client, :publish, @topic}, []) == :allow
+    assert EmqThrottlePlugin.Throttle.check_acl({mqtt_client, :publish, @topic}, []) == :ignore
   end
 
   test "sending one message in test topic" do
     mqtt_client = EmqThrottlePlugin.Shared.mqtt_client(username: @user)
-    assert EmqThrottlePlugin.Throttle.check_acl({mqtt_client, :publish, @testtopic}, []) == :allow
+    assert EmqThrottlePlugin.Throttle.check_acl({mqtt_client, :publish, @testtopic}, []) == :ignore
   end
 
   test "sending 20 messages on disabled topic" do
     mqtt_client = EmqThrottlePlugin.Shared.mqtt_client(username: @user)
-    assert EmqThrottlePlugin.Throttle.check_acl({mqtt_client, :publish, @testtopic}, []) == :allow
+    assert EmqThrottlePlugin.Throttle.check_acl({mqtt_client, :publish, @testtopic}, []) == :ignore
   end
 
   test "sending 11th message in less then 60s" do
     mqtt_client = EmqThrottlePlugin.Shared.mqtt_client(username: @user)
 
     assert Enum.map(1..10, fn _ -> EmqThrottlePlugin.Throttle.check_acl({mqtt_client, :publish, @topic}, []) end)
-    |> Enum.all?(&(&1 == :allow))
+    |> Enum.all?(&(&1 == :ignore))
     
     assert EmqThrottlePlugin.Throttle.check_acl({mqtt_client, :publish, @topic}, []) == :deny
   end
@@ -62,11 +62,11 @@ defmodule EmqThrottlePluginTest do
     window = 1
 
     assert Enum.map(1..10, fn _ -> EmqThrottlePlugin.Throttle.throttle({mqtt_client, @topic}, window) end)
-    |> Enum.all?(&(&1 == :allow))
+    |> Enum.all?(&(&1 == :ignore))
     assert EmqThrottlePlugin.Throttle.throttle({mqtt_client, @topic}, window) == :deny
     :timer.sleep(1000)
 
-    assert EmqThrottlePlugin.Throttle.throttle({mqtt_client, @topic}, window) == :allow
+    assert EmqThrottlePlugin.Throttle.throttle({mqtt_client, @topic}, window) == :ignore
   end
 
   test "when number of messages exceeds twice" do
@@ -75,13 +75,13 @@ defmodule EmqThrottlePluginTest do
 
     # first blow, backoff of 1s
     assert Enum.map(1..10, fn _ -> EmqThrottlePlugin.Throttle.throttle({mqtt_client, @topic}, window) end)
-    |> Enum.all?(&(&1 == :allow))
+    |> Enum.all?(&(&1 == :ignore))
     assert EmqThrottlePlugin.Throttle.throttle({mqtt_client, @topic}, window) == :deny
     :timer.sleep(1000)
 
     # second blow, backoff of 2s
     assert Enum.map(1..10, fn _ -> EmqThrottlePlugin.Throttle.throttle({mqtt_client, @topic}, window) end)
-    |> Enum.all?(&(&1 == :allow))
+    |> Enum.all?(&(&1 == :ignore))
     assert EmqThrottlePlugin.Throttle.throttle({mqtt_client, @topic}, window) == :deny
     :timer.sleep(1000)
 
@@ -89,20 +89,20 @@ defmodule EmqThrottlePluginTest do
     :timer.sleep(1000)
 
     # allow again after 2s
-    assert EmqThrottlePlugin.Throttle.throttle({mqtt_client, @topic}, window) == :allow
+    assert EmqThrottlePlugin.Throttle.throttle({mqtt_client, @topic}, window) == :ignore
   end
 
   test "when admin is sending many messages" do
     mqtt_client = EmqThrottlePlugin.Shared.mqtt_client(username: @admin)
 
     assert Enum.map(1..20, fn _ -> EmqThrottlePlugin.Throttle.check_acl({mqtt_client, :publish, @topic}, []) end)
-    |> Enum.all?(&(&1 == :allow))
+    |> Enum.all?(&(&1 == :ignore))
   end
 
   test "when sending many messages to disabled topic" do
     mqtt_client = EmqThrottlePlugin.Shared.mqtt_client(username: @user)
 
     assert Enum.map(1..20, fn _ -> EmqThrottlePlugin.Throttle.check_acl({mqtt_client, :publish, @disabled_topic}, []) end)
-    |> Enum.all?(&(&1 == :allow))
+    |> Enum.all?(&(&1 == :ignore))
   end
 end
