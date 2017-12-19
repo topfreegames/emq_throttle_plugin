@@ -66,7 +66,7 @@ defmodule EmqThrottlePlugin.Throttle do
     key = build_key(username, topic)
 
     if Utils.is_superuser?(username) or not Utils.is_enabled?(topic) do
-      :allow
+      :ignore
     else
       result = incr_and_get(key, window)
       if result do
