@@ -12,7 +12,7 @@ all: elixir/lib/elixir/ebin/elixir.app
 
 
 elixir/lib/elixir/ebin/elixir.app:
-	git clone https://github.com/elixir-lang/elixir.git
+	git clone -b v1.6.0-rc.0 https://github.com/elixir-lang/elixir.git
 	echo "start to build elixir ..."
 	make -C elixir -f Makefile
 
